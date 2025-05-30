@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:intl/intl.dart';
 import 'utils.dart';
 
 class CaisseManagement {
@@ -14,7 +13,12 @@ class CaisseManagement {
       caisseData = caisseSnapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
         final sortedEntries = data.entries.toList()
-          ..sort((a, b) => a.value['time'].compareTo(b.value['time']));
+          ..sort((a, b) {
+            if (a.value['time'] == null || b.value['time'] == null) {
+              return 0;
+            }
+            return a.value['time'].compareTo(b.value['time']);
+          });
         return {'date': doc.id, 'data': Map.fromEntries(sortedEntries)};
       }).toList();
       
@@ -39,15 +43,46 @@ class CaisseManagement {
 
     data.entries.where((e) => e.key.startsWith('command_')).forEach((entry) {
       final command = entry.value;
-      totalRevenue += (command['total'] as num).toDouble();
+      // Safely parse the total value
+      if (command['total'] != null) {
+        if (command['total'] is num) {
+          totalRevenue += (command['total'] as num).toDouble();
+        } else if (command['total'] is String) {
+          totalRevenue += double.tryParse(command['total'] as String) ?? 0.0;
+        }
+      }
 
-      for (var article in command['articles']) {
-        final name = article['name'];
-        final quantity = article['quantity'];
-        final price = (article['price'] as num).toDouble();
-        totalVariableCost += AdminUtils.getArticleCost(name, price) * quantity;
-        productTotals.update(name, (v) => (v + quantity) as int,
-            ifAbsent: () => quantity);
+      if (command['articles'] != null && command['articles'] is List) {
+        for (var article in command['articles']) {
+          if (article is Map) {
+            final name = article['name'];
+            int quantity = 0;
+            double price = 0.0;
+            
+            // Safely parse quantity
+            if (article['quantity'] is int) {
+              quantity = article['quantity'] as int;
+            } else if (article['quantity'] is double) {
+              quantity = (article['quantity'] as double).toInt();
+            } else if (article['quantity'] is String) {
+              quantity = int.tryParse(article['quantity'] as String) ?? 0;
+            }
+            
+            // Safely parse price
+            if (article['price'] is num) {
+              price = (article['price'] as num).toDouble();
+            } else if (article['price'] is String) {
+              price = double.tryParse(article['price'] as String) ?? 0.0;
+            }
+            
+            totalVariableCost += AdminUtils.getArticleCost(name, price) * quantity;
+            
+            // Update product totals
+            if (name != null) {
+              productTotals.update(name, (v) => v + quantity, ifAbsent: () => quantity);
+            }
+          }
+        }
       }
     });
 
@@ -133,24 +168,35 @@ class CaisseManagement {
     double costs = AdminUtils.dailyFixedCost;
 
     data.entries.where((e) => e.key.startsWith('command_')).forEach((entry) {
-      final commandTotal = entry.value['total'];
-      if (commandTotal is num) {
-        revenue += commandTotal.toDouble();
-      } else if (commandTotal is String) {
-        revenue += double.tryParse(commandTotal) ?? 0.0;
+      // Safely parse the total value
+      if (entry.value['total'] != null) {
+        if (entry.value['total'] is num) {
+          revenue += (entry.value['total'] as num).toDouble();
+        } else if (entry.value['total'] is String) {
+          revenue += double.tryParse(entry.value['total'] as String) ?? 0.0;
+        }
       }
 
       if (entry.value['articles'] is List) {
         for (var article in entry.value['articles']) {
           if (article is Map) {
             final name = article['name']?.toString() ?? '';
-            final quantity = article['quantity'] is num
-                ? (article['quantity'] as num).toDouble()
-                : double.tryParse(article['quantity']?.toString() ?? '0') ??
-                    0.0;
-            final price = article['price'] is num
-                ? (article['price'] as num).toDouble()
-                : double.tryParse(article['price']?.toString() ?? '0') ?? 0.0;
+            double quantity = 0.0;
+            double price = 0.0;
+            
+            // Safely parse quantity
+            if (article['quantity'] is num) {
+              quantity = (article['quantity'] as num).toDouble();
+            } else if (article['quantity'] is String) {
+              quantity = double.tryParse(article['quantity']?.toString() ?? '0') ?? 0.0;
+            }
+            
+            // Safely parse price
+            if (article['price'] is num) {
+              price = (article['price'] as num).toDouble();
+            } else if (article['price'] is String) {
+              price = double.tryParse(article['price']?.toString() ?? '0') ?? 0.0;
+            }
 
             costs += AdminUtils.getArticleCost(name, price) * quantity;
           }
@@ -170,11 +216,12 @@ class CaisseManagement {
   double calculateDailyTotal(Map<String, dynamic> data) {
     return data.entries.fold<double>(0.0, (sum, entry) {
       if (entry.key.startsWith('command_')) {
-        final total = entry.value['total'];
-        if (total is num) {
-          return sum + total.toDouble();
-        } else if (total is String) {
-          return sum + (double.tryParse(total) ?? 0.0);
+        if (entry.value['total'] != null) {
+          if (entry.value['total'] is num) {
+            return sum + (entry.value['total'] as num).toDouble();
+          } else if (entry.value['total'] is String) {
+            return sum + (double.tryParse(entry.value['total'] as String) ?? 0.0);
+          }
         }
       }
       return sum;
