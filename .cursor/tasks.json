@@ -1,0 +1,22 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "flutter-wrapper",
+            "type": "shell",
+            "command": "${workspaceFolder}\\flutter_wrapper.bat",
+            "args": [
+                "doctor"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        }
+    ]
+} 

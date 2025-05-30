@@ -1,0 +1,44 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "saadoun (Flutter)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "deviceId": "all",
+            "flutterSdkPath": "C:\\flutter\\flutter",
+            "dartSdkPath": "C:\\flutter\\flutter\\bin\\cache\\dart-sdk",
+            "args": [
+                "--verbose"
+            ],
+            "env": {
+                "FLUTTER_ROOT": "C:\\flutter\\flutter",
+                "PATH": "C:\\flutter\\flutter\\bin;%PATH%",
+                "FLUTTER_HOST": "VSCode",
+                "DART_SDK": "C:\\flutter\\flutter\\bin\\cache\\dart-sdk"
+            },
+            "preLaunchTask": "flutter-wrapper"
+        },
+        {
+            "name": "saadoun (Flutter) (profile mode)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "flutterMode": "profile",
+            "deviceId": "all",
+            "flutterSdkPath": "C:\\flutter\\flutter",
+            "dartSdkPath": "C:\\flutter\\flutter\\bin\\cache\\dart-sdk"
+        },
+        {
+            "name": "saadoun (Flutter) (release mode)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "flutterMode": "release",
+            "deviceId": "all",
+            "flutterSdkPath": "C:\\flutter\\flutter",
+            "dartSdkPath": "C:\\flutter\\flutter\\bin\\cache\\dart-sdk"
+        }
+    ]
+} 
