@@ -74,15 +74,43 @@ class AdminUtils {
 
   static Widget buildAnalysisSection(
       {required String title, required List<Widget> items}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 10),
-        ...items,
-        const SizedBox(height: 20),
-      ],
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.brown.shade50,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 18, 
+                fontWeight: FontWeight.bold,
+                color: Colors.brown.shade800,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          ...items,
+        ],
+      ),
     );
   }
 
@@ -94,33 +122,47 @@ class AdminUtils {
     bool isCount = false,
     double? difference,
   }) {
+    Color textColor = Colors.black87;
+    if (isProfit) {
+      textColor = value >= 0 ? Colors.green.shade700 : Colors.red.shade700;
+    } else if (isTotal) {
+      textColor = Colors.blue.shade700;
+    }
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
-              style: TextStyle(
-                fontWeight:
-                    isTotal || isProfit ? FontWeight.bold : FontWeight.normal,
-                color: isProfit
-                    ? (value >= 0 ? Colors.green : Colors.red)
-                    : Colors.black,
-              )),
           Text(
-            isCount
-                ? 'x${value.toInt()}'
-                : '${value.toStringAsFixed(3)} DT' +
-                    (difference != null
-                        ? ' (${difference >= 0 ? '+' : ''}${difference.toStringAsFixed(3)})'
-                        : ''),
+            label,
             style: TextStyle(
-              fontWeight:
-                  isTotal || isProfit ? FontWeight.bold : FontWeight.normal,
-              color: isProfit
-                  ? (value >= 0 ? Colors.green : Colors.red)
-                  : Colors.black,
+              fontWeight: isTotal || isProfit ? FontWeight.bold : FontWeight.normal,
+              fontSize: 15,
+              color: textColor,
             ),
+          ),
+          Row(
+            children: [
+              if (isProfit && value >= 0)
+                const Icon(Icons.arrow_upward, color: Colors.green, size: 16)
+              else if (isProfit && value < 0)
+                const Icon(Icons.arrow_downward, color: Colors.red, size: 16),
+              const SizedBox(width: 4),
+              Text(
+                isCount
+                    ? 'x${value.toInt()}'
+                    : '${value.toStringAsFixed(3)} DT' +
+                        (difference != null
+                            ? ' (${difference >= 0 ? '+' : ''}${difference.toStringAsFixed(3)})'
+                            : ''),
+                style: TextStyle(
+                  fontWeight: isTotal || isProfit ? FontWeight.bold : FontWeight.normal,
+                  fontSize: 15,
+                  color: textColor,
+                ),
+              ),
+            ],
           ),
         ],
       ),

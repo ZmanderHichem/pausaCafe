@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 import 'utils.dart';
 
 class CaisseManagement {
@@ -16,6 +17,9 @@ class CaisseManagement {
           ..sort((a, b) => a.value['time'].compareTo(b.value['time']));
         return {'date': doc.id, 'data': Map.fromEntries(sortedEntries)};
       }).toList();
+      
+      // Sort by date (newest first)
+      caisseData.sort((a, b) => b['date'].compareTo(a['date']));
     } catch (e) {
       throw Exception('Erreur de chargement des données de caisse: $e');
     }
@@ -54,10 +58,15 @@ class CaisseManagement {
 
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.5),
+      barrierColor: Colors.black.withOpacity(0.7),
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.white.withOpacity(0.9),
-        title: Text('Détails Caisse - $date'),
+        backgroundColor: Colors.white.withOpacity(0.95),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        title: Text(
+          'Détails Caisse - $date',
+          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.brown),
+          textAlign: TextAlign.center,
+        ),
         content: SingleChildScrollView(
           child: Column(
             children: [
@@ -76,17 +85,28 @@ class CaisseManagement {
                       isProfit: true, difference: profit),
                   Padding(
                     padding: const EdgeInsets.only(top: 10),
-                    child: Text(
-                      'Phase: $phase',
-                      style: TextStyle(
-                        color: profit >= 0 ? Colors.green : Colors.red,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: profit >= 0 ? Colors.green.shade50 : Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: profit >= 0 ? Colors.green.shade300 : Colors.red.shade300,
+                        ),
+                      ),
+                      child: Text(
+                        'Phase: $phase',
+                        style: TextStyle(
+                          color: profit >= 0 ? Colors.green.shade700 : Colors.red.shade700,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
                   ),
                 ],
               ),
+              const Divider(thickness: 1),
               AdminUtils.buildAnalysisSection(
                 title: 'Quantités Vendues',
                 items: productTotals.entries
@@ -101,7 +121,7 @@ class CaisseManagement {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Fermer'),
+            child: const Text('Fermer', style: TextStyle(color: Colors.brown)),
           ),
         ],
       ),
@@ -162,18 +182,96 @@ class CaisseManagement {
   }
 
   Widget buildCaisseList(BuildContext context) {
-    return ListView(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
+    if (caisseData.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        margin: const EdgeInsets.symmetric(vertical: 20),
+        decoration: BoxDecoration(
+          color: Colors.blue.shade50,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Colors.blue.shade200),
+        ),
+        child: const Column(
+          children: [
+            Icon(Icons.info_outline, color: Colors.blue, size: 40),
+            SizedBox(height: 8),
+            Text(
+              'Aucune donnée de caisse disponible',
+              style: TextStyle(color: Colors.blue),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ...caisseData.map((caisse) => ListTile(
-              title: Text(
-                  '${caisse['date']} - ${calculateDailyPhase(caisse['data'])}'),
-              subtitle: Text(
-                  'Total: ${calculateDailyTotal(caisse['data']).toStringAsFixed(3)} DT'),
-              onTap: () =>
-                  showCaisseDetails(context, caisse['date'], caisse['data']),
-            )),
+        const Text(
+          'Historique des Caisses',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.brown),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.2),
+                spreadRadius: 1,
+                blurRadius: 3,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: caisseData.length,
+            separatorBuilder: (context, index) => const Divider(height: 1),
+            itemBuilder: (context, index) {
+              final caisse = caisseData[index];
+              final dailyPhase = calculateDailyPhase(caisse['data']);
+              final dailyTotal = calculateDailyTotal(caisse['data']);
+              final isPositive = dailyPhase.contains('Positive');
+              
+              // Format date from YYYY-MM-DD to DD/MM/YYYY
+              final dateStr = caisse['date'] as String;
+              final dateParts = dateStr.split('-');
+              final formattedDate = '${dateParts[2]}/${dateParts[1]}/${dateParts[0]}';
+              
+              return ListTile(
+                leading: Icon(
+                  isPositive ? Icons.trending_up : Icons.trending_down,
+                  color: isPositive ? Colors.green : Colors.red,
+                ),
+                title: Text(
+                  formattedDate,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text(dailyPhase),
+                trailing: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Text(
+                    '${dailyTotal.toStringAsFixed(3)} DT',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue.shade700,
+                    ),
+                  ),
+                ),
+                onTap: () => showCaisseDetails(context, caisse['date'], caisse['data']),
+              );
+            },
+          ),
+        ),
       ],
     );
   }

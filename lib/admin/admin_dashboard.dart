@@ -23,6 +23,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
   final CaisseManagement _caisseManagement = CaisseManagement();
   final ConsommableManagement _consommableManagement = ConsommableManagement();
 
+  int _selectedIndex = 0;
+  final List<String> _sectionTitles = ['Aperçu', 'Stock', 'Caisse', 'Consommables'];
+
   @override
   void initState() {
     super.initState();
@@ -43,11 +46,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      barrierColor: Colors.black.withOpacity(0.5),
+      barrierColor: Colors.black.withOpacity(0.7),
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: Colors.white.withOpacity(0.9),
-          title: const Text('Admin Login'),
+          backgroundColor: Colors.white.withOpacity(0.95),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          title: const Text(
+            'Admin Login',
+            style: TextStyle(fontWeight: FontWeight.bold, color: Colors.brown),
+            textAlign: TextAlign.center,
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -56,20 +64,37 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 decoration: InputDecoration(
                   labelText: 'Enter Admin Password',
                   errorText: _errorMessage,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  prefixIcon: const Icon(Icons.lock, color: Colors.brown),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Colors.brown, width: 2),
+                  ),
                 ),
                 obscureText: true,
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                style: const TextStyle(fontSize: 16),
               ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
             ),
             ElevatedButton(
               onPressed: _checkPassword,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.brown,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              ),
               child: const Text('Submit'),
             ),
           ],
@@ -105,54 +130,299 @@ class _AdminDashboardState extends State<AdminDashboard> {
     }
   }
 
+  Widget _buildOverviewSection() {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Tableau de Bord',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.brown),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildStatCard('Stock', Icons.inventory, Colors.blue.shade700),
+                _buildStatCard('Caisse', Icons.attach_money, Colors.green.shade700),
+                _buildStatCard('Consommables', Icons.coffee, Colors.orange.shade700),
+              ],
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: () => _stockManagement.showStockInitPopup(context),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Initialiser Stock'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.brown,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatCard(String title, IconData icon, Color color) {
+    return Container(
+      width: 100,
+      height: 100,
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 36, color: color),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.brown),
+        ),
+      );
+    }
+    
+    if (_errorMessage != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 60, color: Colors.red),
+            const SizedBox(height: 16),
+            Text(
+              _errorMessage!,
+              style: const TextStyle(fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadStockData,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.brown,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Réessayer'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_selectedIndex == 0) {
+      return _buildOverviewSection();
+    } else if (_selectedIndex == 1) {
+      return Column(
+        children: [
+          Card(
+            elevation: 4,
+            margin: const EdgeInsets.all(8),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Gestion du Stock',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.brown),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () => _stockManagement.showStockInitPopup(context),
+                    icon: const Icon(Icons.add_circle_outline),
+                    label: const Text('Initialiser Stock'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.brown,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _stockManagement.buildStockStream(),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    } else if (_selectedIndex == 2) {
+      return Column(
+        children: [
+          Card(
+            elevation: 4,
+            margin: const EdgeInsets.all(8),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Gestion de Caisse',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.brown),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _caisseManagement.toggleCaisseData();
+                        if (_caisseManagement.showCaisseData) {
+                          _caisseManagement.loadCaisseData();
+                        }
+                      });
+                    },
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Charger les Données'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green.shade700,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (_caisseManagement.showCaisseData)
+                    _caisseManagement.buildCaisseList(context),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    } else {
+      return Column(
+        children: [
+          Card(
+            elevation: 4,
+            margin: const EdgeInsets.all(8),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Gestion des Consommables',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.brown),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () => _consommableManagement.showConsommableInitPopup(context),
+                    icon: const Icon(Icons.add_circle_outline),
+                    label: const Text('Initialiser Consommables'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orange.shade700,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _consommableManagement.buildConsommableStream(),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) return const Center(child: CircularProgressIndicator());
-    if (_errorMessage != null) return Center(child: Text(_errorMessage!));
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Admin Dashboard"),
+        title: const Text("Admin Dashboard", style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
-        backgroundColor: Colors.white.withOpacity(0.9),
+        backgroundColor: Colors.brown,
+        foregroundColor: Colors.white,
+        elevation: 2,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadStockData,
+            tooltip: 'Refresh Data',
+          ),
+        ],
       ),
-      body: Container(
-        color: Colors.white.withOpacity(0.9),
-        child: _isAuthenticated
-            ? SingleChildScrollView(
-                child: Column(
-                  children: [
-                    ElevatedButton(
-                      onPressed: () =>
-                          _stockManagement.showStockInitPopup(context),
-                      child: const Text('Initialiser Stock'),
-                    ),
-                    ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          _caisseManagement.toggleCaisseData();
-                          if (_caisseManagement.showCaisseData) {
-                            _caisseManagement.loadCaisseData();
-                          }
-                        });
-                      },
-                      child: const Text('Caisse'),
-                    ),
-                    ElevatedButton(
-                      onPressed: () => _consommableManagement
-                          .showConsommableInitPopup(context),
-                      child: const Text('Consommables'),
-                    ),
-                    if (_caisseManagement.showCaisseData)
-                      _caisseManagement.buildCaisseList(context),
-                    _stockManagement.buildStockStream(),
-                    const SizedBox(height: 20),
-                    _consommableManagement.buildConsommableStream(),
+      body: _isAuthenticated
+          ? Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.brown.shade50,
+                    Colors.white,
                   ],
                 ),
-              )
-            : const Center(child: CircularProgressIndicator()),
-      ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: _buildBody(),
+              ),
+            )
+          : const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.brown),
+              ),
+            ),
+      bottomNavigationBar: _isAuthenticated
+          ? BottomNavigationBar(
+              currentIndex: _selectedIndex,
+              onTap: (index) {
+                setState(() {
+                  _selectedIndex = index;
+                });
+              },
+              selectedItemColor: Colors.brown,
+              unselectedItemColor: Colors.grey,
+              type: BottomNavigationBarType.fixed,
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.dashboard),
+                  label: 'Aperçu',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.inventory),
+                  label: 'Stock',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.attach_money),
+                  label: 'Caisse',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.coffee),
+                  label: 'Consommables',
+                ),
+              ],
+            )
+          : null,
     );
   }
 }
